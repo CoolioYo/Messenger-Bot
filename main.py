@@ -1,5 +1,6 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
 import tkinter as tk
 from tkinter import *
 import tkinter.messagebox
@@ -7,9 +8,21 @@ import time
 
 
 def send_message():
-    # Login to messenger
-    username_text = user_entry.get()
-    password_text = pass_entry.get()
+    username_text = str(user_entry.get())
+    password_text = str(pass_entry.get())
+
+    people = str(recipients_box.get(0.0, 'end'))
+    message = str(message_box.get(0.0, 'end'))
+
+    # Check if a text field was left empty
+    text_fields = [username_text, password_text, people, message]
+    text_fields = [text.strip() for text in text_fields]
+
+    if '' in text_fields:
+        tk.messagebox.showinfo('Messenger Bot', 'ERROR: You left a text field blank')
+        return
+
+    people = people.split(',')
 
     browser = webdriver.Chrome('/Users/georgiamartinez/Downloads/chromedriver')
     browser.get('https://www.messenger.com/t/')
@@ -22,11 +35,15 @@ def send_message():
     password.send_keys(password_text)
     login.click()
 
-    # Get the recipients and the message
-    people = recipients_box.get(0.0, 'end')
-    message = message_box.get(0.0, 'end')
+    try:
+        browser.find_element_by_xpath('/html/body/div[1]/div/div/div[1]/div[1]/h1')
+    except NoSuchElementException:
+        tk.messagebox.showinfo('Messenger Bot', 'ERROR: Failed to login')
+        browser.quit()
+        return
 
-    people = people.split(',')
+    found = []
+    not_found = []
 
     for x in range(len(people)):
         # Find the person
@@ -36,16 +53,30 @@ def send_message():
 
         time.sleep(1)
         current_chat = browser.find_element_by_xpath(
-            '/html/body/div[1]/div/div/div[1]/div[2]/div[3]/div/div[1]/div/div/div[1]/span[1]/div/div/div[2]/ul/li/a/div/div[2]/div/div')
-        current_chat.click()
+            '/html/body/div[1]/div/div/div[1]/div[2]/div[3]/div/div[1]/div/div/div[1]/span[1]/div/div/div['
+            '2]/ul/li/a/div/div[2]/div/div')
+        name = current_chat.text
 
-        # Send the text
-        text_box = browser.find_element_by_css_selector('.notranslate')
-        text_box.send_keys(message)
+        # Check if the person was found
+        if people[x] == name:
+            found.append(name)
+            current_chat.click()
 
-        text_box.send_keys(Keys.RETURN)
+            print(name)
 
-    tk.messagebox.showinfo('Messenger Bot', 'The message was sent successfully.')
+            # Send the text
+            text_box = browser.find_element_by_css_selector('.notranslate')
+            text_box.send_keys(message)
+
+            text_box.send_keys(Keys.RETURN)
+        else:
+            not_found.append(people[x])
+
+    if not not_found:
+        tk.messagebox.showinfo('Messenger Bot', 'The message was sent successfully.')
+    else:
+        tk.messagebox.showinfo('Messenger Bot', f'ERROR: Not sent to {not_found}')
+
     browser.quit()
 
 
@@ -82,13 +113,13 @@ lower_frame.place(relx=.5, rely=.3, relwidth=.75, relheight=.6, anchor='n')
 recipients_label = tk.Label(lower_frame, text='Recipients (separated by commas):')
 recipients_label.pack(anchor='nw')
 
-recipients_box = Text(lower_frame, width=100, height=10, highlightbackground='#e8e8e8')
+recipients_box = Text(lower_frame, width=100, height=10, highlightbackground='#e8e8e8', font='arial')
 recipients_box.pack()
 
 message_label = tk.Label(lower_frame, text='Type your message:')
 message_label.pack(anchor='nw')
 
-message_box = Text(lower_frame, width=100, height=10, highlightbackground='#e8e8e8')
+message_box = Text(lower_frame, width=100, height=10, highlightbackground='#e8e8e8', font='arial')
 message_box.pack()
 
 button = tk.Button(lower_frame, text='Send Message', command=send_message)
