@@ -16,14 +16,16 @@ def send_message():
 
     # Check if a text field was left empty
     text_fields = [username_text, password_text, people, message]
-    text_fields = [text.strip() for text in text_fields]
 
     if '' in text_fields:
         tk.messagebox.showinfo('Messenger Bot', 'ERROR: You left a text field blank')
         return
 
+    # Get a list of recipients
     people = people.split(',')
+    people = [name.strip('\n') for name in people]
 
+    # Open browser and login
     browser = webdriver.Chrome('/Users/georgiamartinez/Downloads/chromedriver')
     browser.get('https://www.messenger.com/t/')
 
@@ -42,6 +44,7 @@ def send_message():
         browser.quit()
         return
 
+    # Send the message to each person
     found = []
     not_found = []
 
@@ -64,7 +67,7 @@ def send_message():
 
             print(name)
 
-            # Send the text
+            # Send the message
             text_box = browser.find_element_by_css_selector('.notranslate')
             text_box.send_keys(message)
 
